@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ritual Skincare — Tracker Harian</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #EDEDED;
+    color: #181818;
+    min-height: 100vh;
+  }
+  .app {
+    display: flex;
+    padding: 14px;
+    gap: 14px;
+    min-height: 100vh;
+  }
+  .skc-btn { cursor: pointer; }
+  .skc-btn:active { transform: scale(0.97); }
+  @keyframes skc-pop { 0%{transform:scale(1);} 45%{transform:scale(1.2);} 100%{transform:scale(1);} }
+  .skc-pop { animation: skc-pop .32s ease; }
+  @keyframes skc-toast { from{opacity:0; transform:translate(-50%,12px);} to{opacity:1; transform:translate(-50%,0);} }
+  .skc-toast { animation: skc-toast .22s ease; }
+  @keyframes skc-fade { from{opacity:0;} to{opacity:1;} }
+  .skc-fade { animation: skc-fade .18s ease; }
+  button:focus-visible, .skc-focus:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px solid #1A1A1A; outline-offset: 2px; }
+  .skc-row { transition: background .12s ease; border-radius: 10px; }
+  .skc-row:hover { background: #F7F5F2; }
+  @media (prefers-reduced-motion: reduce) { .skc-pop, .skc-toast, .skc-fade { animation: none !important; } }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    width: 76px;
+    background: #181818;
+    border-radius: 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0;
+    flex-shrink: 0;
+  }
+  .logo {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, #D98A4F, #8B6FC2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 30px;
+  }
+  .nav-list { display: flex; flex-direction: column; gap: 10px; }
+  .nav-btn {
+    width: 46px; height: 46px;
+    border-radius: 13px;
+    background: transparent;
+    border: none;
+    display: flex; align-items: center; justify-content: center;
+    color: #7A7A7A;
+  }
+  .nav-btn.active { background: #2C2C2C; color: #fff; }
+
+  /* ---------- Main ---------- */
+  .main { flex: 1; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .view { display: flex; flex-direction: column; gap: 14px; }
+  .view.hidden { display: none; }
+
+  .topbar {
+    background: #F4F2EF;
+    border-radius: 22px;
+    padding: 24px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .topbar .eyebrow {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: #A39A8E; margin-bottom: 4px;
+  }
+  .topbar h1 { font-size: 30px; font-weight: 800; margin: 0; color: #181818; letter-spacing: -0.02em; }
+
+  .topbar-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .streak-card, .reminder-btn {
+    background: #fff; border-radius: 16px; padding: 10px 16px;
+    display: flex; align-items: center; gap: 10px; border: none;
+  }
+  .reminder-btn { color: #181818; }
+  .reminder-btn.active { background: #181818; color: #fff; }
+  .streak-num { font-size: 16px; font-weight: 800; line-height: 1; color: #181818; }
+  .streak-label { font-size: 9.5px; color: #A39A8E; font-weight: 600; }
+  .reminder-title { font-size: 12px; font-weight: 700; line-height: 1.1; text-align: left; }
+  .reminder-sub { font-size: 9.5px; opacity: 0.7; text-align: left; }
+
+  .notif-warning {
+    background: #FBE9DA; border-radius: 16px; padding: 12px 18px;
+    font-size: 12.5px; color: #8A4E2A; font-weight: 500; display: none;
+  }
+
+  .week-card { background: #fff; border-radius: 22px; padding: 20px 24px; }
+  .week-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .week-head span.title { font-size: 15px; font-weight: 700; color: #181818; }
+  .mode-pill {
+    font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 999px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .mode-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .week-strip { display: flex; gap: 8px; }
+  .day-cell { flex: 1; text-align: center; padding: 10px 0; border-radius: 14px; background: #F7F5F2; cursor: pointer; border: none; }
+  .day-cell.today { background: #181818; }
+  .day-cell .dlabel { font-size: 10.5px; font-weight: 700; color: #A39A8E; margin-bottom: 8px; }
+  .day-cell.today .dlabel { color: #fff; }
+  .day-mark { width: 20px; height: 20px; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; background: #E5E1DA; }
+  .day-mark.future { width: 6px; height: 6px; margin: 7px auto; }
+  .day-mark.skipped { background: #C9BFB2 !important; }
+
+  .cards-row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .routine-card { flex: 1 1 320px; background: #fff; border-radius: 22px; padding: 20px 22px; min-width: 300px; }
+  .rc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .rc-icon-wrap { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+  .rc-titles { display: flex; align-items: center; gap: 10px; }
+  .rc-title { font-size: 15.5px; font-weight: 700; color: #181818; line-height: 1.2; }
+  .rc-subtitle { font-size: 11px; color: #A39A8E; font-weight: 600; }
+  .rc-right { display: flex; align-items: center; gap: 10px; }
+  .rc-badge { font-size: 10.5px; font-weight: 700; padding: 5px 10px; border-radius: 999px; }
+  .ring-wrap { position: relative; width: 34px; height: 34px; }
+  .chevron-btn { background: none; border: none; padding: 4px; color: #A39A8E; display: flex; }
+
+  .steps-list { margin-top: 10px; }
+  .step-row {
+    width: 100%; display: flex; align-items: center; gap: 12px;
+    padding: 10px 8px; background: transparent; border: none; border-top: 1px solid #F4F1EC;
+    text-align: left;
+  }
+  .step-row:first-child { border-top: none; }
+  .step-check {
+    width: 21px; height: 21px; border-radius: 50%; border: 2px solid #E5E1DA;
+    background: transparent; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  }
+  .step-check.checked { border: none; }
+  .step-label { font-size: 13.5px; font-weight: 600; color: #181818; }
+  .step-label.checked { color: #B8AFA2; text-decoration: line-through; text-decoration-color: #D8D1C5; }
+  .step-detail { font-size: 11px; color: #A39A8E; margin-top: 1px; }
+  .step-text { flex: 1; min-width: 0; }
+
+  .tip-card {
+    background: #F4F2EF; border-radius: 18px; padding: 16px 22px;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .tip-icon { width: 30px; height: 30px; border-radius: 10px; background: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .tip-text { font-size: 12.5px; color: #6B6258; line-height: 1.5; padding-top: 5px; }
+
+  /* ---------- Notes card ---------- */
+  .notes-card { background: #fff; border-radius: 22px; padding: 20px 22px; }
+  .notes-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .notes-title { font-size: 15.5px; font-weight: 700; color: #181818; display: flex; align-items: center; gap: 9px; }
+  .notes-icon-wrap { width: 34px; height: 34px; border-radius: 10px; background: #EDE7F8; display: flex; align-items: center; justify-content: center; }
+  .notes-textarea {
+    width: 100%; min-height: 70px; border: 1px solid #ECE6DE; border-radius: 14px;
+    padding: 12px 14px; font-family: inherit; font-size: 13px; color: #181818;
+    resize: vertical; background: #FBFAF8;
+  }
+  .notes-textarea::placeholder { color: #B8AFA2; }
+  .notes-save-row { display: flex; justify-content: flex-end; margin-top: 8px; gap: 8px; align-items: center; }
+  .notes-save-row .saved-hint { font-size: 11px; color: #6FA37A; font-weight: 600; opacity: 0; transition: opacity .25s ease; }
+  .notes-save-row .saved-hint.show { opacity: 1; }
+  .skip-toggle-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; margin-bottom: 4px; }
+  .skip-toggle-row label { font-size: 12px; color: #8A7A6E; font-weight: 600; display: flex; align-items: center; gap: 7px; cursor: pointer; }
+  .skip-toggle-row input[type=checkbox] { width: 16px; height: 16px; accent-color: #D98A4F; cursor: pointer; }
+
+  /* ---------- Products card ---------- */
+  .products-card { background: #fff; border-radius: 22px; padding: 20px 22px; }
+  .products-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .products-title { font-size: 15.5px; font-weight: 700; color: #181818; display: flex; align-items: center; gap: 9px; }
+  .products-icon-wrap { width: 34px; height: 34px; border-radius: 10px; background: #E3F0E6; display: flex; align-items: center; justify-content: center; }
+  .product-row { display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-top: 1px solid #F4F1EC; }
+  .product-row:first-child { border-top: none; }
+  .product-name { font-size: 13px; font-weight: 600; color: #181818; flex: 1; min-width: 0; }
+  .product-bar-wrap { width: 90px; height: 6px; background: #F0EDE8; border-radius: 999px; overflow: hidden; flex-shrink: 0; }
+  .product-bar-fill { height: 100%; border-radius: 999px; transition: width .3s ease; }
+  .product-days { font-size: 11px; font-weight: 700; width: 64px; text-align: right; flex-shrink: 0; }
+  .product-restock-input { width: 50px; border: 1px solid #ECE6DE; border-radius: 8px; padding: 4px 6px; font-size: 11px; text-align: center; font-family: inherit; }
+
+  /* ---------- Calendar view ---------- */
+  .calendar-card { background: #fff; border-radius: 22px; padding: 20px 24px; }
+  .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .cal-title { font-size: 17px; font-weight: 800; color: #181818; }
+  .cal-nav { display: flex; gap: 6px; }
+  .cal-nav-btn { width: 32px; height: 32px; border-radius: 9px; border: none; background: #F4F2EF; display: flex; align-items: center; justify-content: center; color: #6B6258; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .cal-dow { text-align: center; font-size: 10.5px; font-weight: 700; color: #A39A8E; padding-bottom: 6px; }
+  .cal-cell { aspect-ratio: 1; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: #F7F5F2; position: relative; border: none; cursor: pointer; }
+  .cal-cell.empty { background: transparent; cursor: default; }
+  .cal-cell.today { box-shadow: 0 0 0 2px #181818 inset; }
+  .cal-cell-num { font-size: 11.5px; font-weight: 700; color: #6B6258; }
+  .cal-cell.done .cal-cell-num { color: #fff; }
+  .cal-cell.done { background: var(--cell-color, #6FA37A); }
+  .cal-cell.skipped { background: #E5E1DA; }
+  .cal-cell.partial { background: #FBE9DA; }
+  .cal-cell-dot { width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,0.8); }
+  .cal-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 18px; padding-top: 16px; border-top: 1px solid #F4F1EC; }
+  .cal-legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #6B6258; font-weight: 600; }
+  .cal-legend-swatch { width: 10px; height: 10px; border-radius: 4px; }
+
+  .cal-stats-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .cal-stat { flex: 1; min-width: 110px; background: #F7F5F2; border-radius: 14px; padding: 12px 14px; }
+  .cal-stat-num { font-size: 20px; font-weight: 800; color: #181818; line-height: 1; }
+  .cal-stat-label { font-size: 10.5px; color: #A39A8E; font-weight: 600; margin-top: 4px; }
+
+  .day-detail-popover {
+    position: fixed; background: #181818; color: #fff; border-radius: 14px; padding: 12px 16px;
+    font-size: 12px; z-index: 100; max-width: 220px; box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    display: none;
+  }
+  .day-detail-popover .ddp-date { font-weight: 700; margin-bottom: 6px; font-size: 12.5px; }
+  .day-detail-popover .ddp-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; color: #D8D1C5; }
+  .day-detail-popover .ddp-note { margin-top: 6px; padding-top: 6px; border-top: 1px solid #333; color: #B8AFA2; font-style: italic; }
+
+  /* ---------- Settings view ---------- */
+  .settings-card { background: #fff; border-radius: 22px; padding: 20px 22px; }
+  .settings-section-title { font-size: 13px; font-weight: 700; color: #A39A8E; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
+  .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 4px; border-top: 1px solid #F4F1EC; gap: 14px; }
+  .settings-row:first-of-type { border-top: none; }
+  .settings-row-text { flex: 1; min-width: 0; }
+  .settings-row-title { font-size: 13.5px; font-weight: 700; color: #181818; }
+  .settings-row-desc { font-size: 11.5px; color: #A39A8E; margin-top: 2px; }
+  .settings-btn {
+    background: #181818; color: #fff; border: none; border-radius: 11px; padding: 9px 16px;
+    font-size: 12.5px; font-weight: 700; white-space: nowrap; flex-shrink: 0;
+  }
+  .settings-btn.secondary { background: #F4F2EF; color: #181818; }
+  .settings-btn.danger { background: #FBE9DA; color: #B9651F; }
+  .file-input-hidden { display: none; }
+
+  @media (max-width: 760px) {
+    .sidebar { display: none; }
+  }
+
+  svg.icon { display: block; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="logo">
+      <svg class="icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+    </div>
+    <div class="nav-list">
+      <button class="nav-btn active skc-focus" id="nav-today" aria-label="Hari Ini">
+        <svg class="icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      </button>
+      <button class="nav-btn skc-focus" id="nav-calendar" aria-label="Kalender">
+        <svg class="icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      </button>
+      <button class="nav-btn skc-focus" id="nav-settings" aria-label="Pengaturan">
+        <svg class="icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- ===================== VIEW: TODAY ===================== -->
+    <div class="view" id="view-today">
+
+      <div class="topbar">
+        <div>
+          <div class="eyebrow" id="todayLabel">—</div>
+          <h1>Ritual hari ini</h1>
+        </div>
+        <div class="topbar-actions">
+          <div class="streak-card">
+            <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D98A4F" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+            <div>
+              <div class="streak-num" id="streakNum">0</div>
+              <div class="streak-label">hari beruntun</div>
+            </div>
+          </div>
+          <button class="reminder-btn skc-btn skc-focus" id="reminderBtn">
+            <svg class="icon" id="bellIcon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#A39A8E" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            <div>
+              <div class="reminder-title" id="reminderTitle">Aktifkan reminder</div>
+              <div class="reminder-sub" id="reminderSub">Tap untuk izinkan</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="notif-warning" id="notifWarning">
+        Notifikasi diblokir di browser. Aktifkan lewat pengaturan situs untuk dapat reminder.
+      </div>
+
+      <div class="week-card">
+        <div class="week-head">
+          <span class="title">Minggu ini</span>
+          <span class="mode-pill" id="modePill"><span class="mode-dot" id="modeDot"></span><span id="modeLabel">—</span></span>
+        </div>
+        <div class="week-strip" id="weekStrip"></div>
+      </div>
+
+      <div class="cards-row">
+        <div class="routine-card" id="morningCard"></div>
+        <div class="routine-card" id="nightCard"></div>
+      </div>
+
+      <!-- Daily note + skip toggle -->
+      <div class="notes-card">
+        <div class="notes-head">
+          <div class="notes-title">
+            <div class="notes-icon-wrap">
+              <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B6FC2" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
+            </div>
+            Catatan Hari Ini
+          </div>
+        </div>
+        <div class="skip-toggle-row">
+          <label>
+            <input type="checkbox" id="skipToggle">
+            Hari ini di-skip (misal lagi purging / iritasi)
+          </label>
+        </div>
+        <textarea class="notes-textarea skc-focus" id="dailyNote" placeholder="Reaksi kulit, hal yang dirasain, atau alasan skip hari ini..."></textarea>
+        <div class="notes-save-row">
+          <span class="saved-hint" id="noteSavedHint">Tersimpan ✓</span>
+        </div>
+      </div>
+
+      <!-- Product restock tracker -->
+      <div class="products-card">
+        <div class="products-head">
+          <div class="products-title">
+            <div class="products-icon-wrap">
+              <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6FA37A" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20.91 8.84L8.56 21.19a1.93 1.93 0 0 1-2.73 0L2.81 18.16a1.93 1.93 0 0 1 0-2.73L15.16 2.91a1.93 1.93 0 0 1 1.21-.55l3.6-.32a1.93 1.93 0 0 1 2.09 2.09l-.32 3.6a1.93 1.93 0 0 1-.55 1.11z"/></svg>
+            </div>
+            Stok Produk
+          </div>
+        </div>
+        <div id="productsList"></div>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-icon">
+          <svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8B6FC2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>
+        </div>
+        <span class="tip-text">Niacinamide aman tiap hari. BHA & Retinol tidak pernah dipakai di malam yang sama — jadwal ini mengatur otomatis sesuai hari.</span>
+      </div>
+
+    </div>
+
+    <!-- ===================== VIEW: CALENDAR ===================== -->
+    <div class="view hidden" id="view-calendar">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Riwayat</div>
+          <h1>Kalender</h1>
+        </div>
+      </div>
+
+      <div class="calendar-card">
+        <div class="cal-stats-row" id="calStatsRow"></div>
+        <div class="cal-head">
+          <span class="cal-title" id="calMonthLabel">—</span>
+          <div class="cal-nav">
+            <button class="cal-nav-btn skc-focus" id="calPrev" aria-label="Bulan sebelumnya">
+              <svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button class="cal-nav-btn skc-focus" id="calNext" aria-label="Bulan berikutnya">
+              <svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="cal-grid" id="calDow"></div>
+        <div class="cal-grid" id="calGrid" style="margin-top:6px;"></div>
+
+        <div class="cal-legend">
+          <div class="cal-legend-item"><span class="cal-legend-swatch" style="background:#6FA37A;"></span>Komplit</div>
+          <div class="cal-legend-item"><span class="cal-legend-swatch" style="background:#FBE9DA;"></span>Sebagian</div>
+          <div class="cal-legend-item"><span class="cal-legend-swatch" style="background:#E5E1DA;"></span>Di-skip</div>
+          <div class="cal-legend-item"><span class="cal-legend-swatch" style="background:#F7F5F2;"></span>Belum diisi</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== VIEW: SETTINGS ===================== -->
+    <div class="view hidden" id="view-settings">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Kelola</div>
+          <h1>Pengaturan</h1>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-section-title">Data</div>
+        <div class="settings-row">
+          <div class="settings-row-text">
+            <div class="settings-row-title">Export data</div>
+            <div class="settings-row-desc">Simpan semua progress, catatan, dan stok produk ke file JSON</div>
+          </div>
+          <button class="settings-btn skc-btn skc-focus" id="exportBtn">Export</button>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-text">
+            <div class="settings-row-title">Import data</div>
+            <div class="settings-row-desc">Pulihkan data dari file JSON yang pernah di-export</div>
+          </div>
+          <button class="settings-btn secondary skc-btn skc-focus" id="importBtn">Import</button>
+          <input type="file" id="importFile" class="file-input-hidden" accept="application/json">
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-text">
+            <div class="settings-row-title">Hapus semua data</div>
+            <div class="settings-row-desc">Reset progress, catatan, dan riwayat secara permanen</div>
+          </div>
+          <button class="settings-btn danger skc-btn skc-focus" id="resetBtn">Hapus</button>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-section-title">Tentang Penyimpanan</div>
+        <div style="font-size:12.5px; color:#6B6258; line-height:1.6; padding:4px;">
+          Data tersimpan lokal di browser ini (localStorage). Data <strong>tidak otomatis sinkron</strong> antar device atau browser berbeda — gunakan fitur Export di atas secara berkala untuk backup.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast" style="position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#181818; color:#fff; padding:12px 22px; border-radius:999px; font-size:13.5px; font-weight:600; box-shadow:0 8px 24px rgba(0,0,0,0.2); z-index:50; display:none;"></div>
+<div class="day-detail-popover" id="dayPopover"></div>
+
+<script>
+// ---------------- Data ----------------
+const DAY_NAMES = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+const DAY_SHORT = ["Min","Sen","Sel","Rab","Kam","Jum","Sab"];
+const MONTH_NAMES = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+
+const NIGHT_MODE_BY_DAY = { 0:"normal", 1:"normal", 2:"bha", 3:"normal", 4:"retinol", 5:"normal", 6:"bha" };
+
+const MODE_META = {
+  normal:  { label: "Malam Biasa",  color: "#6FA37A", soft: "#E3F0E6" },
+  bha:     { label: "Malam BHA",    color: "#D98A4F", soft: "#FBE9DA" },
+  retinol: { label: "Malam Retinol",color: "#8B6FC2", soft: "#EDE7F8" },
+};
+
+const MORNING_STEPS = [
+  { id:"m1", label:"Cleanser", detail:"Cosrx Salicylic Acid Cleanser" },
+  { id:"m2", label:"Toner", detail:"Pyunkang Yul Toner" },
+  { id:"m3", label:"Vitamin C", detail:"Serum Vit C 10%" },
+  { id:"m4", label:"Serum Brightening", detail:"Tranexamic 3% + Arbutin 3% + Niacinamide 5%" },
+  { id:"m5", label:"Moisturizer", detail:"Dr. Althea 345" },
+  { id:"m6", label:"Sunscreen", detail:"Beauty of Joseon SPF 50 — wajib!" },
+  { id:"m7", label:"Lip Care", detail:"Lip balm" },
+];
+
+const NIGHT_STEPS = {
+  normal: [
+    { id:"n1", label:"Cleanser", detail:"Cosrx Salicylic Acid Cleanser" },
+    { id:"n2", label:"Toner", detail:"Pyunkang Yul Toner" },
+    { id:"n3", label:"Serum Brightening", detail:"Tranexamic 3% + Arbutin 3% + Niacinamide 5%" },
+    { id:"n4", label:"Moisturizer", detail:"Dr. Althea 345" },
+    { id:"n5", label:"Lip Treatment", detail:"Serum tipis ke bibir / lip mask" },
+  ],
+  bha: [
+    { id:"n1", label:"Cleanser", detail:"Cosrx Salicylic Acid Cleanser" },
+    { id:"n2", label:"Toner", detail:"Pyunkang Yul Toner" },
+    { id:"n3", label:"BHA Liquid", detail:"Cosrx BHA Blackhead Power Liquid" },
+    { id:"n4", label:"Tunggu 20–30 menit", detail:"Sebelum lanjut ke moisturizer" },
+    { id:"n5", label:"Moisturizer", detail:"Dr. Althea 345" },
+  ],
+  retinol: [
+    { id:"n1", label:"Cleanser", detail:"Cosrx Salicylic Acid Cleanser" },
+    { id:"n2", label:"Toner", detail:"Pyunkang Yul Toner" },
+    { id:"n3", label:"Serum Brightening", detail:"Tranexamic 3% + Arbutin 3% + Niacinamide 5%" },
+    { id:"n4", label:"Tunggu kering 5–10 menit", detail:"Baru lanjut retinol" },
+    { id:"n5", label:"Retinol", detail:"Avoskin 0.025% — seukuran biji jagung" },
+    { id:"n6", label:"Moisturizer", detail:"Dr. Althea 345 (sandwich method)" },
+  ],
+};
+
+const DEFAULT_PRODUCTS = [
+  { id: "p1", name: "Cosrx SA Cleanser", totalDays: 60, openedOn: null },
+  { id: "p2", name: "Pyunkang Yul Toner", totalDays: 75, openedOn: null },
+  { id: "p3", name: "Serum Brightening", totalDays: 60, openedOn: null },
+  { id: "p4", name: "Dr. Althea 345", totalDays: 60, openedOn: null },
+  { id: "p5", name: "Beauty of Joseon SPF50", totalDays: 90, openedOn: null },
+  { id: "p6", name: "Cosrx BHA Liquid", totalDays: 90, openedOn: null },
+  { id: "p7", name: "Retinol Avoskin", totalDays: 90, openedOn: null },
+];
+
+// ---------------- Storage ----------------
+const LS_KEYS = {
+  checks: "skc_checks",
+  history: "skc_history",
+  reminders: "skc_reminders",
+  notes: "skc_notes",
+  skips: "skc_skips",
+  products: "skc_products",
+};
+
+let memoryStore = {};
+let storageAvailable = false;
+try {
+  const testKey = "__skc_test__";
+  window.localStorage.setItem(testKey, "1");
+  window.localStorage.removeItem(testKey);
+  storageAvailable = true;
+} catch (e) {
+  storageAvailable = false;
+}
+
+function loadJSON(key, fallback) {
+  try {
+    if (storageAvailable) {
+      const raw = window.localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    }
+    return memoryStore[key] !== undefined ? JSON.parse(memoryStore[key]) : fallback;
+  } catch (e) { return fallback; }
+}
+function saveJSON(key, val) {
+  try {
+    if (storageAvailable) {
+      window.localStorage.setItem(key, JSON.stringify(val));
+    } else {
+      memoryStore[key] = JSON.stringify(val);
+    }
+  } catch (e) {}
+}
+
+let checks = loadJSON(LS_KEYS.checks, {});
+let history = loadJSON(LS_KEYS.history, {});
+let remindersOn = loadJSON(LS_KEYS.reminders, false);
+let dailyNotes = loadJSON(LS_KEYS.notes, {});       // { "2026-06-20": "catatan..." }
+let skipDays = loadJSON(LS_KEYS.skips, {});         // { "2026-06-20": true }
+let products = loadJSON(LS_KEYS.products, DEFAULT_PRODUCTS);
+
+let expandedMorning = true;
+let expandedNight = true;
+let calendarCursor = new Date(); // month being viewed
+const firedMorning = new Set();
+const firedNight = new Set();
+let noteSaveTimer = null;
+
+function todayKey(d = new Date()) {
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,"0"), day = String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+
+function checkIconSVG(color, size=12) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+}
+function chevronSVG(up) {
+  return up
+    ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>`
+    : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.style.display = "block";
+  el.classList.remove("skc-toast"); void el.offsetWidth; el.classList.add("skc-toast");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.style.display = "none"; }, 3200);
+}
+
+function getDayChecks(key) {
+  return checks[key] || { morning: {}, night: {} };
+}
+
+function isDayComplete(key, dayIdx) {
+  const mode = NIGHT_MODE_BY_DAY[dayIdx];
+  const dc = getDayChecks(key);
+  const mDone = MORNING_STEPS.every(s => (dc.morning && dc.morning[s.id]));
+  const nDone = NIGHT_STEPS[mode].every(s => (dc.night && dc.night[s.id]));
+  return mDone && nDone;
+}
+
+function computeStreak(now) {
+  let count = 0;
+  let cursor = new Date(now);
+  for (let i = 0; i < 365; i++) {
+    const k = todayKey(cursor);
+    const dIdx = cursor.getDay();
+    const skipped = !!skipDays[k];
+    if (i === 0) {
+      const done = isDayComplete(todayKey(now), now.getDay());
+      if (done || skipped) { if (done) count++; }
+      if (!done && !skipped) { cursor.setDate(cursor.getDate() - 1); continue; }
+      if (!done && skipped) { cursor.setDate(cursor.getDate() - 1); continue; }
+    } else {
+      const rec = history[k];
+      if (skipped) { cursor.setDate(cursor.getDate() - 1); continue; }
+      if (rec && rec.morningDone && rec.nightDone) count++;
+      else break;
+    }
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return count;
+}
+
+function ringSVG(pct, ringColor) {
+  const r = 15, c = 2 * Math.PI * r;
+  const offset = c - (pct/100) * c;
+  return `<svg width="34" height="34" viewBox="0 0 34 34">
+    <circle cx="17" cy="17" r="${r}" fill="none" stroke="#F0EDE8" stroke-width="4"/>
+    <circle cx="17" cy="17" r="${r}" fill="none" stroke="${ringColor}" stroke-width="4"
+      stroke-dasharray="${c}" stroke-dashoffset="${offset}" stroke-linecap="round"
+      transform="rotate(-90 17 17)" style="transition: stroke-dashoffset .4s ease"/>
+  </svg>`;
+}
+
+function sunIconSVG(color) {
+  return `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>`;
+}
+function moonIconSVG(color) {
+  return `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+}
+
+// ---------------- Routine card rendering ----------------
+function renderRoutineCard(containerId, opts) {
+  const { icon, title, subtitle, badgeText, badgeColor, badgeBg, pct, ringColor, steps, checkedMap, period, expanded } = opts;
+  const container = document.getElementById(containerId);
+
+  let stepsHTML = "";
+  if (expanded) {
+    stepsHTML = `<div class="steps-list">` + steps.map(step => {
+      const isChecked = !!checkedMap[step.id];
+      return `
+        <button class="step-row skc-row skc-btn skc-focus" data-period="${period}" data-id="${step.id}" type="button">
+          <span class="step-check ${isChecked ? 'checked' : ''}" style="${isChecked ? `background:${ringColor};` : ''}">
+            ${isChecked ? checkIconSVG('#fff') : ''}
+          </span>
+          <span class="step-text">
+            <div class="step-label ${isChecked ? 'checked' : ''}">${step.label}</div>
+            <div class="step-detail">${step.detail}</div>
+          </span>
+        </button>`;
+    }).join("") + `</div>`;
+  }
+
+  container.innerHTML = `
+    <div class="rc-head">
+      <div class="rc-titles">
+        <div class="rc-icon-wrap" style="background:${badgeBg};">${icon}</div>
+        <div>
+          <div class="rc-title">${title}</div>
+          ${subtitle ? `<div class="rc-subtitle">${subtitle}</div>` : ""}
+        </div>
+      </div>
+      <div class="rc-right">
+        <span class="rc-badge" style="color:${badgeColor}; background:${badgeBg};">${badgeText}</span>
+        <div class="ring-wrap">${ringSVG(pct, ringColor)}</div>
+        <button class="chevron-btn skc-focus" id="${period}-toggle" type="button" aria-label="${expanded ? 'Sembunyikan langkah' : 'Tampilkan langkah'}">
+          ${chevronSVG(expanded)}
+        </button>
+      </div>
+    </div>
+    ${stepsHTML}
+  `;
+
+  container.querySelectorAll(".step-row").forEach(btn => {
+    btn.addEventListener("click", () => toggleStep(btn.dataset.period, btn.dataset.id));
+  });
+  document.getElementById(`${period}-toggle`).addEventListener("click", () => {
+    if (period === "morning") expandedMorning = !expandedMorning; else expandedNight = !expandedNight;
+    renderToday();
+  });
+}
+
+function toggleStep(period, id) {
+  const now = new Date();
+  const key = todayKey(now);
+  const dayIdx = now.getDay();
+  const mode = NIGHT_MODE_BY_DAY[dayIdx];
+  const nightSteps = NIGHT_STEPS[mode];
+
+  const dayRec = checks[key] || { morning: {}, night: {} };
+  const periodRec = { ...(dayRec[period] || {}) };
+
+  const wasComplete = period === "morning"
+    ? MORNING_STEPS.every(s => (dayRec.morning && dayRec.morning[s.id]))
+    : nightSteps.every(s => (dayRec.night && dayRec.night[s.id]));
+
+  periodRec[id] = !periodRec[id];
+  dayRec[period] = periodRec;
+  checks[key] = dayRec;
+  saveJSON(LS_KEYS.checks, checks);
+
+  const nowComplete = period === "morning"
+    ? MORNING_STEPS.every(s => periodRec[s.id])
+    : nightSteps.every(s => periodRec[s.id]);
+
+  if (!wasComplete && nowComplete) {
+    showToast(period === "morning" ? "Rutin pagi selesai! ☀️" : "Rutin malam selesai! 🌙");
+  }
+
+  updateHistory();
+  renderToday();
+}
+
+function updateHistory() {
+  const now = new Date();
+  const key = todayKey(now);
+  const dayIdx = now.getDay();
+  const mode = NIGHT_MODE_BY_DAY[dayIdx];
+  const dc = getDayChecks(key);
+  const mDone = MORNING_STEPS.every(s => (dc.morning && dc.morning[s.id]));
+  const nDone = NIGHT_STEPS[mode].every(s => (dc.night && dc.night[s.id]));
+  const existing = history[key] || {};
+  if (existing.morningDone !== mDone || existing.nightDone !== nDone) {
+    history[key] = { morningDone: mDone, nightDone: nDone };
+    saveJSON(LS_KEYS.history, history);
+  }
+}
+
+// ---------------- TODAY view render ----------------
+function renderToday() {
+  const now = new Date();
+  const dayIdx = now.getDay();
+  const mode = NIGHT_MODE_BY_DAY[dayIdx];
+  const meta = MODE_META[mode];
+  const key = todayKey(now);
+  const dc = getDayChecks(key);
+
+  document.getElementById("todayLabel").textContent =
+    `${DAY_NAMES[dayIdx]}, ${now.getDate()} ${MONTH_NAMES[now.getMonth()]}`;
+
+  document.getElementById("streakNum").textContent = computeStreak(now);
+
+  document.getElementById("modeLabel").textContent = meta.label;
+  document.getElementById("modeDot").style.background = meta.color;
+  document.getElementById("modePill").style.color = meta.color;
+  document.getElementById("modePill").style.background = meta.soft;
+
+  // Week strip
+  const weekStrip = document.getElementById("weekStrip");
+  weekStrip.innerHTML = "";
+  for (let i = 0; i < 7; i++) {
+    const isToday = i === dayIdx;
+    const m = MODE_META[NIGHT_MODE_BY_DAY[i]];
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayIdx + i);
+    const k = todayKey(d);
+    const rec = history[k];
+    const past = i < dayIdx;
+    const skipped = !!skipDays[k];
+    let doneAll;
+    if (i === dayIdx) {
+      doneAll = isDayComplete(key, dayIdx);
+    } else {
+      doneAll = !!(rec && rec.morningDone && rec.nightDone);
+    }
+
+    const cell = document.createElement("button");
+    cell.type = "button";
+    cell.className = "day-cell" + (isToday ? " today" : "");
+    let markHTML;
+    if (skipped && !doneAll) {
+      markHTML = `<div class="day-mark skipped"></div>`;
+    } else if (past || isToday) {
+      const bg = doneAll ? m.color : (isToday ? "#3A3A3A" : "#E5E1DA");
+      markHTML = `<div class="day-mark" style="background:${bg};">${doneAll ? checkIconSVG('#fff', 11) : ''}</div>`;
+    } else {
+      markHTML = `<div class="day-mark future" style="background:${m.color};"></div>`;
+    }
+    cell.innerHTML = `<div class="dlabel">${DAY_SHORT[i]}</div>${markHTML}`;
+    cell.addEventListener("click", () => {
+      goToCalendarMonth(d);
+    });
+    weekStrip.appendChild(cell);
+  }
+
+  // Morning card
+  const morningDone = MORNING_STEPS.filter(s => (dc.morning && dc.morning[s.id])).length;
+  const morningComplete = morningDone === MORNING_STEPS.length;
+  renderRoutineCard("morningCard", {
+    icon: sunIconSVG("#D98A4F"),
+    title: "Rutin Pagi",
+    subtitle: null,
+    badgeText: morningComplete ? "Selesai" : `${MORNING_STEPS.length - morningDone} tersisa`,
+    badgeColor: morningComplete ? "#6FA37A" : "#D98A4F",
+    badgeBg: morningComplete ? "#E3F0E6" : "#FBE9DA",
+    pct: Math.round((morningDone / MORNING_STEPS.length) * 100),
+    ringColor: "#D98A4F",
+    steps: MORNING_STEPS,
+    checkedMap: dc.morning || {},
+    period: "morning",
+    expanded: expandedMorning,
+  });
+
+  // Night card
+  const nightSteps = NIGHT_STEPS[mode];
+  const nightDone = nightSteps.filter(s => (dc.night && dc.night[s.id])).length;
+  const nightComplete = nightDone === nightSteps.length;
+  renderRoutineCard("nightCard", {
+    icon: moonIconSVG(meta.color),
+    title: "Rutin Malam",
+    subtitle: meta.label,
+    badgeText: nightComplete ? "Selesai" : `${nightSteps.length - nightDone} tersisa`,
+    badgeColor: nightComplete ? "#6FA37A" : meta.color,
+    badgeBg: nightComplete ? "#E3F0E6" : meta.soft,
+    pct: Math.round((nightDone / nightSteps.length) * 100),
+    ringColor: meta.color,
+    steps: nightSteps,
+    checkedMap: dc.night || {},
+    period: "night",
+    expanded: expandedNight,
+  });
+
+  // Reminder button state
+  const reminderBtn = document.getElementById("reminderBtn");
+  const reminderTitle = document.getElementById("reminderTitle");
+  const reminderSub = document.getElementById("reminderSub");
+  if (remindersOn) {
+    reminderBtn.classList.add("active");
+    document.getElementById("bellIcon").outerHTML = `<svg class="icon" id="bellIcon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8a6 6 0 0 0-12 0 17.89 17.89 0 0 1-2.63 9L3 17h18z"/></svg>`;
+    reminderTitle.textContent = "Reminder aktif";
+    reminderSub.textContent = "7 pagi · 9 malam";
+  } else {
+    reminderBtn.classList.remove("active");
+    document.getElementById("bellIcon").outerHTML = `<svg class="icon" id="bellIcon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#A39A8E" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+    reminderTitle.textContent = "Aktifkan reminder";
+    reminderSub.textContent = "Tap untuk izinkan";
+  }
+
+  const notifWarning = document.getElementById("notifWarning");
+  if (typeof Notification !== "undefined" && Notification.permission === "denied") {
+    notifWarning.style.display = "block";
+  } else {
+    notifWarning.style.display = "none";
+  }
+
+  // Daily note + skip toggle
+  const noteEl = document.getElementById("dailyNote");
+  if (document.activeElement !== noteEl) {
+    noteEl.value = dailyNotes[key] || "";
+  }
+  document.getElementById("skipToggle").checked = !!skipDays[key];
+
+  // Products
+  renderProducts();
+}
+
+// ---------------- Daily note handling ----------------
+document.getElementById("dailyNote").addEventListener("input", (e) => {
+  const key = todayKey(new Date());
+  dailyNotes[key] = e.target.value;
+  saveJSON(LS_KEYS.notes, dailyNotes);
+  const hint = document.getElementById("noteSavedHint");
+  hint.classList.add("show");
+  clearTimeout(noteSaveTimer);
+  noteSaveTimer = setTimeout(() => hint.classList.remove("show"), 1500);
+});
+
+document.getElementById("skipToggle").addEventListener("change", (e) => {
+  const key = todayKey(new Date());
+  if (e.target.checked) {
+    skipDays[key] = true;
+    showToast("Hari ini ditandai sebagai skip");
+  } else {
+    delete skipDays[key];
+  }
+  saveJSON(LS_KEYS.skips, skipDays);
+  renderToday();
+});
+
+// ---------------- Products rendering ----------------
+function daysSince(dateStr) {
+  if (!dateStr) return null;
+  const start = new Date(dateStr);
+  const now = new Date();
+  const diff = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+  return diff;
+}
+
+function renderProducts() {
+  const list = document.getElementById("productsList");
+  list.innerHTML = products.map(p => {
+    const used = p.openedOn ? daysSince(p.openedOn) : null;
+    const pct = used === null ? 0 : Math.min(100, Math.round((used / p.totalDays) * 100));
+    const remaining = used === null ? null : Math.max(0, p.totalDays - used);
+    let barColor = "#6FA37A";
+    if (pct >= 90) barColor = "#D9544F";
+    else if (pct >= 70) barColor = "#D98A4F";
+
+    const statusText = used === null
+      ? `<button class="settings-btn secondary skc-btn skc-focus" data-open="${p.id}" style="padding:5px 10px; font-size:10.5px;" type="button">Mulai pakai</button>`
+      : `<span class="product-days" style="color:${barColor};">${remaining <= 0 ? 'Habis!' : remaining + ' hari lagi'}</span>`;
+
+    return `
+      <div class="product-row">
+        <span class="product-name">${p.name}</span>
+        ${used !== null ? `<div class="product-bar-wrap"><div class="product-bar-fill" style="width:${pct}%; background:${barColor};"></div></div>` : ''}
+        ${statusText}
+        ${used !== null ? `<button class="chevron-btn skc-focus" data-reset="${p.id}" title="Reset (botol baru)" type="button" style="color:#C9BFB2;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        </button>` : ''}
+      </div>
+    `;
+  }).join("");
+
+  list.querySelectorAll("[data-open]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.open;
+      const p = products.find(x => x.id === id);
+      if (p) {
+        p.openedOn = todayKey(new Date());
+        saveJSON(LS_KEYS.products, products);
+        showToast(p.name + " mulai dilacak");
+        renderProducts();
+      }
+    });
+  });
+  list.querySelectorAll("[data-reset]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.reset;
+      const p = products.find(x => x.id === id);
+      if (p) {
+        p.openedOn = todayKey(new Date());
+        saveJSON(LS_KEYS.products, products);
+        showToast(p.name + " direset (botol baru)");
+        renderProducts();
+      }
+    });
+  });
+}
+
+// ---------------- CALENDAR view ----------------
+function goToCalendarMonth(date) {
+  calendarCursor = new Date(date.getFullYear(), date.getMonth(), 1);
+  switchView("calendar");
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const year = calendarCursor.getFullYear();
+  const month = calendarCursor.getMonth();
+  document.getElementById("calMonthLabel").textContent = `${MONTH_NAMES[month]} ${year}`;
+
+  const dowRow = document.getElementById("calDow");
+  dowRow.innerHTML = DAY_SHORT.map(d => `<div class="cal-dow">${d}</div>`).join("");
+
+  const firstDay = new Date(year, month, 1);
+  const startOffset = firstDay.getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayK = todayKey(new Date());
+
+  const grid = document.getElementById("calGrid");
+  let cellsHTML = "";
+  for (let i = 0; i < startOffset; i++) {
+    cellsHTML += `<div class="cal-cell empty"></div>`;
+  }
+
+  let completedCount = 0, skippedCount = 0, totalPastDays = 0;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateObj = new Date(year, month, d);
+    const k = todayKey(dateObj);
+    const isToday = k === todayK;
+    const isFuture = dateObj > new Date();
+    const dIdx = dateObj.getDay();
+    const m = MODE_META[NIGHT_MODE_BY_DAY[dIdx]];
+    const skipped = !!skipDays[k];
+    const note = dailyNotes[k];
+
+    let done;
+    if (isToday) {
+      done = isDayComplete(k, dIdx);
+    } else {
+      const rec = history[k];
+      done = !!(rec && rec.morningDone && rec.nightDone);
+    }
+
+    let cls = "cal-cell";
+    let style = "";
+    if (isToday) cls += " today";
+
+    if (!isFuture) {
+      totalPastDays++;
+      if (done) { cls += " done"; style = `style="--cell-color:${m.color};"`; completedCount++; }
+      else if (skipped) { cls += " skipped"; skippedCount++; }
+      else {
+        const rec = history[k];
+        const anyProgress = rec && (rec.morningDone || rec.nightDone);
+        if (anyProgress) cls += " partial";
+      }
+    }
+
+    cellsHTML += `<button type="button" class="${cls}" ${style} data-date="${k}">
+      <span class="cal-cell-num">${d}</span>
+      ${note ? '<span class="cal-cell-dot"></span>' : ''}
+    </button>`;
+  }
+
+  grid.innerHTML = cellsHTML;
+
+  // Stats
+  const statsRow = document.getElementById("calStatsRow");
+  const rate = totalPastDays > 0 ? Math.round((completedCount / totalPastDays) * 100) : 0;
+  statsRow.innerHTML = `
+    <div class="cal-stat">
+      <div class="cal-stat-num">${completedCount}</div>
+      <div class="cal-stat-label">hari komplit</div>
+    </div>
+    <div class="cal-stat">
+      <div class="cal-stat-num">${skippedCount}</div>
+      <div class="cal-stat-label">hari di-skip</div>
+    </div>
+    <div class="cal-stat">
+      <div class="cal-stat-num">${rate}%</div>
+      <div class="cal-stat-label">tingkat konsistensi</div>
+    </div>
+  `;
+
+  grid.querySelectorAll(".cal-cell:not(.empty)").forEach(cell => {
+    cell.addEventListener("click", (e) => showDayPopover(e, cell.dataset.date));
+  });
+}
+
+function showDayPopover(evt, dateKey) {
+  const popover = document.getElementById("dayPopover");
+  const rec = history[dateKey];
+  const skipped = !!skipDays[dateKey];
+  const note = dailyNotes[dateKey];
+  const d = new Date(dateKey);
+  const dateLabel = `${d.getDate()} ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+
+  let rows = "";
+  if (skipped) {
+    rows += `<div class="ddp-row">⏸ Ditandai skip</div>`;
+  } else if (rec) {
+    rows += `<div class="ddp-row">${rec.morningDone ? '✓' : '○'} Rutin pagi</div>`;
+    rows += `<div class="ddp-row">${rec.nightDone ? '✓' : '○'} Rutin malam</div>`;
+  } else {
+    rows += `<div class="ddp-row">Belum ada data</div>`;
+  }
+
+  popover.innerHTML = `
+    <div class="ddp-date">${dateLabel}</div>
+    ${rows}
+    ${note ? `<div class="ddp-note">"${note}"</div>` : ""}
+  `;
+
+  const rect = evt.currentTarget.getBoundingClientRect();
+  popover.style.display = "block";
+  let left = rect.left + rect.width / 2 - 110;
+  left = Math.max(8, Math.min(left, window.innerWidth - 228));
+  popover.style.left = left + "px";
+  let top = rect.bottom + 8;
+  if (top + 100 > window.innerHeight) top = rect.top - 100;
+  popover.style.top = top + "px";
+
+  setTimeout(() => {
+    document.addEventListener("click", hidePopoverOnce, { once: true });
+  }, 0);
+}
+function hidePopoverOnce(e) {
+  const popover = document.getElementById("dayPopover");
+  if (!popover.contains(e.target)) {
+    popover.style.display = "none";
+  } else {
+    document.addEventListener("click", hidePopoverOnce, { once: true });
+  }
+}
+
+document.getElementById("calPrev").addEventListener("click", () => {
+  calendarCursor.setMonth(calendarCursor.getMonth() - 1);
+  renderCalendar();
+});
+document.getElementById("calNext").addEventListener("click", () => {
+  calendarCursor.setMonth(calendarCursor.getMonth() + 1);
+  renderCalendar();
+});
+
+// ---------------- View switching ----------------
+function switchView(name) {
+  ["today", "calendar", "settings"].forEach(v => {
+    document.getElementById("view-" + v).classList.toggle("hidden", v !== name);
+    document.getElementById("nav-" + v).classList.toggle("active", v === name);
+  });
+  document.getElementById("dayPopover").style.display = "none";
+}
+
+document.getElementById("nav-today").addEventListener("click", () => switchView("today"));
+document.getElementById("nav-calendar").addEventListener("click", () => { switchView("calendar"); renderCalendar(); });
+document.getElementById("nav-settings").addEventListener("click", () => switchView("settings"));
+
+// ---------------- Export / Import / Reset ----------------
+document.getElementById("exportBtn").addEventListener("click", () => {
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    version: 1,
+    checks, history, remindersOn, dailyNotes, skipDays, products,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `skincare-backup-${todayKey(new Date())}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast("Data berhasil di-export");
+});
+
+document.getElementById("importBtn").addEventListener("click", () => {
+  document.getElementById("importFile").click();
+});
+
+document.getElementById("importFile").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data.checks) checks = data.checks;
+      if (data.history) history = data.history;
+      if (typeof data.remindersOn === "boolean") remindersOn = data.remindersOn;
+      if (data.dailyNotes) dailyNotes = data.dailyNotes;
+      if (data.skipDays) skipDays = data.skipDays;
+      if (data.products) products = data.products;
+
+      saveJSON(LS_KEYS.checks, checks);
+      saveJSON(LS_KEYS.history, history);
+      saveJSON(LS_KEYS.reminders, remindersOn);
+      saveJSON(LS_KEYS.notes, dailyNotes);
+      saveJSON(LS_KEYS.skips, skipDays);
+      saveJSON(LS_KEYS.products, products);
+
+      showToast("Data berhasil di-import");
+      renderToday();
+    } catch (err) {
+      showToast("Gagal import: file tidak valid");
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = "";
+});
+
+document.getElementById("resetBtn").addEventListener("click", () => {
+  const confirmed = window.confirm("Yakin mau hapus semua data? Tindakan ini tidak bisa dibatalkan.");
+  if (!confirmed) return;
+  checks = {}; history = {}; dailyNotes = {}; skipDays = {}; products = JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
+  saveJSON(LS_KEYS.checks, checks);
+  saveJSON(LS_KEYS.history, history);
+  saveJSON(LS_KEYS.notes, dailyNotes);
+  saveJSON(LS_KEYS.skips, skipDays);
+  saveJSON(LS_KEYS.products, products);
+  showToast("Semua data telah dihapus");
+  renderToday();
+});
+
+// ---------------- Reminders ----------------
+async function requestNotif() {
+  if (typeof Notification === "undefined") {
+    showToast("Browser ini tidak mendukung notifikasi");
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  if (perm === "granted") {
+    remindersOn = true;
+    saveJSON(LS_KEYS.reminders, remindersOn);
+    showToast("Reminder aktif");
+    new Notification("Reminder Skincare Aktif", { body: "Kamu akan diingatkan jam 7 pagi & 9 malam." });
+  } else {
+    showToast("Izin notifikasi ditolak");
+  }
+  renderToday();
+}
+
+document.getElementById("reminderBtn").addEventListener("click", () => {
+  if (remindersOn) {
+    remindersOn = false;
+    saveJSON(LS_KEYS.reminders, remindersOn);
+    showToast("Reminder dimatikan");
+    renderToday();
+  } else if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+    remindersOn = true;
+    saveJSON(LS_KEYS.reminders, remindersOn);
+    showToast("Reminder aktif");
+    renderToday();
+  } else {
+    requestNotif();
+  }
+});
+
+function checkReminderTime() {
+  if (!remindersOn || typeof Notification === "undefined" || Notification.permission !== "granted") return;
+  const now = new Date();
+  const h = now.getHours(), m = now.getMinutes();
+  const key = todayKey(now);
+  const dayIdx = now.getDay();
+  const mode = NIGHT_MODE_BY_DAY[dayIdx];
+  const meta = MODE_META[mode];
+  const dc = getDayChecks(key);
+  const mDone = MORNING_STEPS.every(s => (dc.morning && dc.morning[s.id]));
+  const nightSteps = NIGHT_STEPS[mode];
+  const nDone = nightSteps.every(s => (dc.night && dc.night[s.id]));
+
+  if (h === 7 && m === 0 && !firedMorning.has(key)) {
+    firedMorning.add(key);
+    if (!mDone && !skipDays[key]) {
+      new Notification("Waktunya Skincare Pagi", { body: "7 langkah rutin pagi kamu menunggu — jangan lupa sunscreen!" });
+    }
+  }
+  if (h === 21 && m === 0 && !firedNight.has(key)) {
+    firedNight.add(key);
+    if (!nDone && !skipDays[key]) {
+      new Notification(`Waktunya Skincare Malam (${meta.label})`, { body: `${nightSteps.length} langkah rutin malam ini sudah siap.` });
+    }
+  }
+}
+
+// ---------------- Init ----------------
+switchView("today");
+renderToday();
+updateHistory();
+setInterval(() => { renderToday(); checkReminderTime(); }, 30000);
+checkReminderTime();
+</script>
+
+</body>
+</html>
